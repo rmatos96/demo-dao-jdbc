@@ -15,6 +15,10 @@ public class Seller implements Serializable{
 	private Double baseSalary;
 	
 	private Department department;
+	
+	public Seller() {
+		
+	}
 
 	public Seller(Integer id, String name, String email, Date brithDate,
 			Double baseSalary, Department department) {
@@ -93,8 +97,8 @@ public class Seller implements Serializable{
 
 	@Override
 	public String toString() {
-		return "Seller [id=" + id + ", name=" + name + ", email=" + email + ", brithDate="
-				+ brithDate + ", baseSalary=" + baseSalary + ", department=" + department
+		return "Seller [Id =" + id + ", Name = " + name + ", Email = " + email + ", BrithDate = "
+				+ brithDate + ", BaseSalary = " + baseSalary + ", Department = " + department
 				+ "]";
 	}
 	
