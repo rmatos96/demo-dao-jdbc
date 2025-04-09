@@ -1,9 +1,11 @@
 package model.dao.impl;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,21 +26,75 @@ public class SellerDaoJDBC implements SellerDao {
 	}
 
 	@Override
-	public void insert(Seller ojb) {
-		// TODO Auto-generated method stub
+	public void insert(Seller obj) {
+
+		PreparedStatement st = null;
+		try {
+			st = conn.prepareStatement(
+					"insert into seller (Name, Email, BirthDate, BaseSalary, DepartmentId)"
+							+ " values (?, ?, ?, ?, ?)",
+					Statement.RETURN_GENERATED_KEYS);
+			st.setString(1, obj.getName());
+			st.setString(2, obj.getEmail());
+			st.setDate(3, new Date(obj.getBrithDate().getTime()));
+			st.setDouble(4, obj.getBaseSalary());
+			st.setInt(5, obj.getDepartment().getId());
+
+			int linhasAfetadas = st.executeUpdate();
+			if (linhasAfetadas > 0) {
+				ResultSet rs = st.getGeneratedKeys();
+				if (rs.next()) {
+					int id = rs.getInt(1);
+					obj.setId(id);
+				}
+			} else {
+				throw new DbException("Nenhuma linha afetada!");
+			}
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+		}
 
 	}
 
 	@Override
-	public void update(Seller ojb) {
-		// TODO Auto-generated method stub
+	public void update(Seller obj) {
 
+		PreparedStatement st = null;
+		try {
+			st = conn.prepareStatement(
+					"update seller set Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ? where Id = ?");
+			st.setString(1, obj.getName());
+			st.setString(2, obj.getEmail());
+			st.setDate(3, new Date(obj.getBrithDate().getTime()));
+			st.setDouble(4, obj.getBaseSalary());
+			st.setInt(5, obj.getDepartment().getId());
+			st.setInt(6, obj.getId());
+
+			st.executeUpdate();
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+		}
 	}
 
 	@Override
 	public void deleteById(Integer id) {
-		// TODO Auto-generated method stub
 
+		PreparedStatement st = null;
+		try {
+			st = conn.prepareStatement("delete from seller where Id = ?");
+
+			st.setInt(1, id);
+
+			st.executeUpdate();
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+		}
 	}
 
 	@Override
@@ -86,8 +142,38 @@ public class SellerDaoJDBC implements SellerDao {
 
 	@Override
 	public List<Seller> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+		PreparedStatement st = null;
+		ResultSet rs = null;
+
+		try {
+			st = conn.prepareStatement("select seller.*,department.Name as DepName "
+					+ "from seller inner join department "
+					+ "on seller.DepartmentId = department.Id " + "order by Name");
+
+			rs = st.executeQuery();
+
+			List<Seller> lista = new ArrayList<Seller>();
+			Map<Integer, Department> map = new HashMap<Integer, Department>();
+
+			while (rs.next()) {
+
+				Department department1 = map.get(rs.getInt("DepartmentId"));
+
+				if (department1 == null) {
+					department1 = instantiateDepartment(rs);
+					map.put(rs.getInt("DepartmentId"), department1);
+				}
+
+				Seller obj = instantiateSeller(rs, department1);
+				lista.add(obj);
+			}
+			return lista;
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
 	}
 
 	@Override
@@ -98,8 +184,8 @@ public class SellerDaoJDBC implements SellerDao {
 		try {
 			st = conn.prepareStatement("select seller.*,department.Name as DepName "
 					+ "from seller inner join department "
-					+ "on seller.DepartmentId = department.Id "
-					+ "where DepartmentId = ? " + "order by Name");
+					+ "on seller.DepartmentId = department.Id " + "where DepartmentId = ? "
+					+ "order by Name");
 
 			st.setInt(1, dep.getId());
 			rs = st.executeQuery();
